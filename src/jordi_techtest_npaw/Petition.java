@@ -10,9 +10,7 @@ package jordi_techtest_npaw;
  * @author Jordi
  */
 public class Petition {
-   
     public String accountCode;
     public String targetDevice;
-    public String pluginVersion;
-    
+    public String pluginVersion;  
 }

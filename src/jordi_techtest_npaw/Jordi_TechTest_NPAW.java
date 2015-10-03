@@ -9,7 +9,7 @@ package jordi_techtest_npaw;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+//import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,14 +19,26 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 /**
  *
- * @author Jordi
+ * @author Jordi Calduch Casas
  */
 public class Jordi_TechTest_NPAW implements Runnable {
 
     private final Socket m_socket;
     private final int m_num;
+    
+    private String senderIP;
+    private String senderPort;
+    
+    private String account_code;
+    private String targetDevice;
+    private String pluginVersion;
+    private String pingTime;
+    private String viewCode;
+    private String host;
+                
 
     Jordi_TechTest_NPAW( Socket socket, int num )
     {
@@ -37,6 +49,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
         handler.start();
     }
     
+    @Override
     public void run()
     {
         try
@@ -49,11 +62,40 @@ public class Jordi_TechTest_NPAW implements Runnable {
                 //out.write( "Welcome connection #" + m_num + "\n\r" );
                 //out.flush();
                 
+                //String message = org.apache.commons.io.IOUtils.toString(rd);
+                //String queryParams = getStringFromInputStream(in);
+                String line = in.readLine();
+                //Get the service configuration
+                getServiceConfig();
+                
+                //Get the parameters from the request
+                Map<String, List<String>> recievedData = getQueryParams(line);
+                account_code = recievedData.get("accountCode").get(0);
+                targetDevice = recievedData.get("targetDevice").get(0);
+                pluginVersion = recievedData.get("pluginVersion").get(0).substring(0, 5); //Caution! Substring here removes trash but should be done safely.
+                
+                
+                //RLEncodedUtils.parse(in.toString());
+                //Check accountCode
+                if (checkAccCode()){
+                    if(checkTargetDevice() && checkPluginVersion()){
+                        viewCode = generateViewCode();
+                        PrepareXML.setXML(account_code, pingTime, pingTime);
+                        
+                        //StringBuilder to prepare/send XML?
+                        
+                    }else{
+                        serviceAnswer(""); //null response
+                    }
+                }else{
+                    serviceAnswer(""); //null response 
+                }
+                
                 
                 
                 while ( true )
                 {
-                    String line = in.readLine();
+                    //String line = in.readLine();
                     if ( line == null )
                     {
                         System.out.println( m_num + " Closed." );
@@ -93,8 +135,11 @@ public class Jordi_TechTest_NPAW implements Runnable {
     }
     
     public void serviceAnswer(String response){
-        
-        
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.      
+    }
+    
+    private void getServiceConfig() {
+       // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
     
@@ -125,6 +170,28 @@ public class Jordi_TechTest_NPAW implements Runnable {
         } catch (UnsupportedEncodingException ex) {
             throw new AssertionError(ex);
             }
+    }
+    
+    
+    private boolean checkAccCode() {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return true;
+    }
+
+    private boolean checkTargetDevice() {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return true;
+    }
+
+    private boolean checkPluginVersion() {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return true;
+    }
+
+    //To make sure only one thread at a time can generate its unique code. As a result the speed of the program is lowered
+    private synchronized String generateViewCode() {
+        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return null;
     }
     
     

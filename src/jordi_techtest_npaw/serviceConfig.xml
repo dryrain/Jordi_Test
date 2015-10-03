@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<config>
+	<accountCode name="clienteA">
+		<device name="XBox">
+                    <pingTime>10</pingTime>
+                    <pluginVersion>3.3.1</pluginVersion>
+                    <hosts>
+                        <host name = "clusterA">70</host>
+                        <host name = "clusterB">30</host>
+                    </hosts>
+		</device>
+		<device name="Panasonic">
+                    <pingTime>5</pingTime>
+                    <pluginVersion>3.3.2</pluginVersion>
+                    <hosts>
+                        <host name = "clusterA">0</host>
+                        <host name = "clusterB">100</host>
+                    </hosts>
+		</device>
+	</accountCode>
+	<accountCode name="clienteB">
+		<device name="osmf">
+                    <pingTime>5</pingTime>
+                    <pluginVersion>3.3.1</pluginVersion>
+                    <hosts>
+                        <host name = "clusterA">50</host>
+                        <host name = "clusterB">50</host>
+                    </hosts>
+		</device>
+	</accountCode>
+</config>
+
+
+
+
