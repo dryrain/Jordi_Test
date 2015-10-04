@@ -1,18 +1,14 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package jordi_techtest_npaw;
 
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-//import java.io.OutputStreamWriter;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,7 +32,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
     private String targetDevice;
     private String pluginVersion;
     private String pingTime;
-    private String viewCode;
+    private static int viewCode=0;
     private String host;
                 
 
@@ -58,28 +54,35 @@ public class Jordi_TechTest_NPAW implements Runnable {
             {
                 System.out.println( m_num + " Connected." );
                 BufferedReader in = new BufferedReader( new InputStreamReader( m_socket.getInputStream() ) );
-                //OutputStreamWriter out = new OutputStreamWriter( m_socket.getOutputStream() );
-                //out.write( "Welcome connection #" + m_num + "\n\r" );
-                //out.flush();
+                OutputStreamWriter out = new OutputStreamWriter( m_socket.getOutputStream() );
+                out.write( "Welcome connection #" + m_num + "\n\r" );
+                out.flush();
                 
                 //String message = org.apache.commons.io.IOUtils.toString(rd);
                 //String queryParams = getStringFromInputStream(in);
                 String line = in.readLine();
+                
+                //Would be nice to check whether the request is an HTTP GET request
+                
+                //URL urlToParse = new URL(in.readLine().split(" ")(0));
+                //urlToParse.getProtocol();
+                //urlToParse.getHost();
+                
                 //Get the service configuration
-                getServiceConfig();
+                getServiceConfig(); // this can be done every X seconds or minutes to increase the service's speed
                 
                 //Get the parameters from the request
                 Map<String, List<String>> recievedData = getQueryParams(line);
                 account_code = recievedData.get("accountCode").get(0);
                 targetDevice = recievedData.get("targetDevice").get(0);
-                pluginVersion = recievedData.get("pluginVersion").get(0).substring(0, 5); //Caution! Substring here removes trash but should be done safely.
+                pluginVersion = recievedData.get("pluginVersion").get(0).substring(0, 5); //Caution! Substring here removes trash but should be done safer.
                 
                 
                 //RLEncodedUtils.parse(in.toString());
                 //Check accountCode
                 if (checkAccCode()){
                     if(checkTargetDevice() && checkPluginVersion()){
-                        viewCode = generateViewCode();
+                        generateViewCode();
                         PrepareXML.setXML(account_code, pingTime, pingTime);
                         
                         //StringBuilder to prepare/send XML?
@@ -103,7 +106,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
                     }
                     else
                     {
-                        System.out.println( m_num + " Read: " + line );
+                        //System.out.println( m_num + " Read: " + line );
                         if ( line.equals( "exit" ) )
                         {
                             System.out.println( m_num + " Closing Connection." );
@@ -116,7 +119,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
                         //}
                         else
                         {
-                            System.out.println( m_num + " Write: echo " + line );
+                            //System.out.println( m_num + " Write: echo " + line );
                             //out.write( "echo " + line + "\n\r" );
                             //out.flush();
                         }
@@ -125,6 +128,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
             }
             finally
             {
+
                 m_socket.close();
             }
         }
@@ -135,6 +139,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
     }
     
     public void serviceAnswer(String response){
+        
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.      
     }
     
@@ -174,13 +179,13 @@ public class Jordi_TechTest_NPAW implements Runnable {
     
     
     private boolean checkAccCode() {
+        return PrepareXML.checkInServiceConfig(account_code, "accountCode");
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        return true;
     }
 
     private boolean checkTargetDevice() {
+        return PrepareXML.checkInServiceConfig(targetDevice, "device");
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        return true;
     }
 
     private boolean checkPluginVersion() {
@@ -188,10 +193,17 @@ public class Jordi_TechTest_NPAW implements Runnable {
         return true;
     }
 
-    //To make sure only one thread at a time can generate its unique code. As a result the speed of the program is lowered
-    private synchronized String generateViewCode() {
+    //We use synchronized to make sure only one thread at a time can generate its unique code. 
+    //As a result the speed of the program is lowered
+    private synchronized void generateViewCode() {
+        //The idea here is to use a simple incremental counter. It provides unique numbers
+        //without the need to log and check the other viewCodes provided
+        //The only issue here is if the service is RESTARTED. One way to protect 
+        //us from this would be storing the viewcode in a configFile or database
+        viewCode++;
+        
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        return null;
+        
     }
     
     

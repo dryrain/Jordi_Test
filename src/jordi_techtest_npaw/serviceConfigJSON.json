@@ -1,0 +1,67 @@
+{
+  "config": {
+    "accountCode": [
+      {
+        "-name": "clienteA",
+        "device": [
+          {
+            "-name": "XBox",
+            "pingTime": "10",
+            "pluginVersion": "3.3.1",
+            "hosts": {
+              "host": [
+                {
+                  "-name": "clusterA",
+                  "percent": "70"
+                },
+                {
+                  "-name": "clusterB",
+                  "percent": "30"
+                }
+              ]
+            }
+          },
+          {
+            "-name": "Panasonic",
+            "pingTime": "5",
+            "pluginVersion": "3.3.2",
+            "hosts": {
+              "host": [
+                {
+                  "-name": "clusterA",
+                  "percent": "0"
+                },
+                {
+                  "-name": "clusterB",
+                  "percent": "100"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "-name": "clienteB",
+        "device": [
+          {
+          "-name": "osmf",
+          "pingTime": "5",
+          "pluginVersion": "3.3.1",
+          "hosts": {
+            "host": [
+              {
+                "-name": "clusterA",
+                "percent": "50"
+              },
+              {
+                "-name": "clusterB",
+                "percent": "50"
+              }
+            ]
+           }
+          }
+        ]
+      }
+    ]
+  }
+}
