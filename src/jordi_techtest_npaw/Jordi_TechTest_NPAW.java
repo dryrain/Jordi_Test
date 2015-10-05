@@ -1,6 +1,5 @@
 package jordi_techtest_npaw;
 
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,30 +17,29 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 /**
  *
  * @author Jordi Calduch Casas
  */
+//Main class. Implements the thread that processes the GET request and provides
+//the answer to each client.
+//For better optimization, all System.out.println should be removed i favour of a
+//better logging solution
 public class Jordi_TechTest_NPAW implements Runnable {
-
     private final Socket m_socket;
     private final int m_num;
     private OutputStreamWriter out;
-    private int n_clusters = 2;
     
-    private String senderIP;
-    private String senderPort;
+    //private String senderIP;
+    //private String senderPort;
     
     private String account_code;
     private String targetDevice;
     private String pluginVersion;
     private String pingTime;
-    private static int viewCode=0;
-    //private static String sViewCode=null;
+    private static long viewCode=0;
     private String host;
                 
-
     Jordi_TechTest_NPAW( Socket socket, int num )
     {
         m_socket = socket;
@@ -58,61 +56,58 @@ public class Jordi_TechTest_NPAW implements Runnable {
         {
             try
             {
+                //Getting the GET request
                 System.out.println( m_num + " Connected." );
                 BufferedReader in = new BufferedReader( new InputStreamReader( m_socket.getInputStream() ) );
-                out = new OutputStreamWriter( m_socket.getOutputStream() );
-                
+                out = new OutputStreamWriter( m_socket.getOutputStream() );               
                 String line = in.readLine();
                 
-                //Would be ideal to check whether the request is an HTTP GET request and the senders IP
+                //Would be ideal to check whether the request is an HTTP GET request and the senders IP/port
                 //Right now we assume every request is correctly formatted
-//                try{
-//                    URL urlToParse = new URL(in.readLine().split(" ")[0]);
+                //Could try something with the URL library but currently is not working      
+//                    URL urlToParse = new URL(line.split(" ")[0]);
 //                    urlToParse.getProtocol();
 //                    urlToParse.getHost();
-//                }catch(Exception ex){
-//                    
-//                }
-                
-                //Get the service configuration
-                getServiceConfig(); // this could be done every X seconds or minutes to increase the service's speed
-                
-                //Get the parameters from the request
+     
+                //Getting the parameters from the request
                 try {
                     Map<String, List<String>> recievedData = getQueryParams(line);
                     account_code = recievedData.get("accountCode").get(0);
                     targetDevice = recievedData.get("targetDevice").get(0);
                     pluginVersion = recievedData.get("pluginVersion").get(0).substring(0, 5); //Caution! Substring here removes trash but should be done safer.
                 }catch (NullPointerException ex){
-                    Logger.getLogger(Jordi_TechTest_NPAW.class.getName()).log(Level.SEVERE, null, ex);
-                    System.out.println( "Error: The server couldn't identify the request" );
+                    System.out.println( "Error: The server couldn't identify the request \" "+line+" \" " );
+                    return;
                 }
                               
-                //Check Account/Device/Plugins at the serviceConfig
-                //This could be done all at the same methode to gain efficiency.
-                //We decided to keep it in separate methodes for better understanding and to match the 
+                //****Checking Account/Device/Plugins at the serviceConfig****
+                //This could be done all at the same method to gain efficiency.
+                //We decided to keep it in separate methods for better understanding and to match the 
                 //described functionality of the project.
+                //Every thread checks serviceConfig.xml to find the right configuration for the client. 
+                //To improve this we could catch every X time the configuration into program variables
+                //and thanks to that we woulnd't need to query the XML document every time
                 if (checkAccCode()){
                     if(checkTargetDevice()){
                         pingTime = checkPluginVersion();
-                        String[][] hosts = PrepareXML.clusterSelectorFromXML(account_code,targetDevice,n_clusters);
+                        if(pingTime.equals("-1"))pluginVersion="Not Supported!";
+                        String[][] hosts = XMLHelper.clusterSelectorFromXML(account_code,targetDevice);
                         host = selectHost(hosts);
                         generateViewCode();
-                        //PrepareXML.checkInServiceConfigJSON();
-                        //PrepareXML.setXML(account_code, pingTime, pingTime);
-                        serviceAnswer();
-                        //StringBuilder to prepare/send XML?
+                        serviceAnswer(); //good response
                         
                     }else{
                         serviceBlankAnswer(); //null response
+                        System.out.println( "Error: Non matching Target Device!" );
                     }
                 }else{
-                    serviceBlankAnswer(); //null response 
+                    serviceBlankAnswer(); //null response
+                    System.out.println( "Error: Non matching Account Code!" );
                 }          
             }
-            finally
+            finally //We always end up here
             {
-                m_socket.close();
+                m_socket.close();                
             }
         }
         catch ( IOException e )
@@ -122,10 +117,11 @@ public class Jordi_TechTest_NPAW implements Runnable {
     }
     
     public boolean serviceAnswer(){
+        //Here we create the XML and then send it. It is done without storing/editing the
+        //XML file because we could have concurrency problems with other Threads
+        //As it DIDN'T specify to send an HTTP answer, the XML file is written directly to the outputStream
         try {
-            //Here we create the XML and then send it. It is done without storing/editing the
-            //XML file because we could have concurrency problems with other Threads
-            String toSend = PrepareXML.getXMLResponseAsString(host,pluginVersion,Integer.toString(viewCode));
+            String toSend = XMLHelper.getXMLResponseAsString(host,pluginVersion,Long.toString(viewCode));
             System.out.println(toSend);
             out.write(toSend);
             out.flush();
@@ -137,6 +133,7 @@ public class Jordi_TechTest_NPAW implements Runnable {
     }
     
     public boolean serviceBlankAnswer(){
+        //Just sending back a blank space
         try {
             out.write(" ");
             out.flush();
@@ -147,24 +144,17 @@ public class Jordi_TechTest_NPAW implements Runnable {
         }
     }
     
-    private void getServiceConfig() {
-       // throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    } 
-    
     private boolean checkAccCode() {
-        return PrepareXML.checkInServiceConfig(account_code, "accountCode");
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return XMLHelper.checkInServiceConfig(account_code, "accountCode");
     }
 
     private boolean checkTargetDevice() {
-        return PrepareXML.checkInServiceConfig(targetDevice, "device");
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return XMLHelper.checkTargetDevice(account_code, targetDevice);
     }
 
     private String checkPluginVersion() {
-        return PrepareXML.checkPluginAndGetPing(account_code, targetDevice, pluginVersion);
+        return XMLHelper.checkPluginAndGetPing(account_code, targetDevice, pluginVersion);
     }
-    
     
     private String selectHost(String[][] hostsList){
         //The idea here is to increase efficiency using a random number from 1-100 every time
@@ -186,21 +176,23 @@ public class Jordi_TechTest_NPAW implements Runnable {
                 baseValue = percentValue;
             }
         }
-        return "Error in Host Selection";
+        return "Error in Host Selection!";
     }
 
     //We use synchronized to make sure only one thread at a time can generate its unique code. 
-    //As a result the speed of the program is lowered
+    //As a result the efficiency of the program is lowered.
     private synchronized void generateViewCode() {
         //The idea here is to use a simple incremental counter. It provides unique numbers
         //without the need to log and check the other viewCodes provided
         //The only issue here is if the service is RESTARTED. One way to protect 
         //us from this would be storing the viewcode in a configFile or database     
-        this.viewCode++;  
+        viewCode++;  
         System.out.println( "ViewCode value is: " + viewCode );      
     }
       
+    
     public static Map<String, List<String>> getQueryParams(String url) {
+        //A methode that gets all the parameters from the HTTP GET query
         try {
             Map<String, List<String>> params = new HashMap<String, List<String>>();
             String[] urlParts = url.split("\\?");
@@ -213,7 +205,6 @@ public class Jordi_TechTest_NPAW implements Runnable {
                     if (pair.length > 1) {
                         value = URLDecoder.decode(pair[1], "UTF-8");
                     }
-
                     List<String> values = params.get(key);
                     if (values == null) {
                         values = new ArrayList<String>();
@@ -225,10 +216,9 @@ public class Jordi_TechTest_NPAW implements Runnable {
             return params;
         } catch (UnsupportedEncodingException ex) {
             throw new AssertionError(ex);
-            }
+        }
     }
-    
-    
+      
     public static void main( String[] args )
         throws Exception
     {
